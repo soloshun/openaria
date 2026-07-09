@@ -9,7 +9,7 @@ description = "Diagnosis-as-Code for failed data, ML, and software delivery pipe
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
-authors = [{ name = "Solomon Eshen", email = "SolomonEshen373@gmail.com" }]
+authors = [{ name = "Solomon Eshun", email = "solomoneshun373@gmail.com" }]
 keywords = ["aiops", "incident-management", "mlops", "observability", "pipeline-reliability"]
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
