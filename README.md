@@ -78,7 +78,7 @@ The core does not require an LLM provider or agent framework. Provider-specific 
 
 OpenARIA is built as a lightweight framework with typed incident, diagnosis, memory, model-gateway, policy, approval, and verification interfaces. Cookbooks are separate, runnable projects that depend on those public interfaces rather than embedding framework logic themselves.
 
-See [Framework and cookbook architecture](docs/framework-and-cookbooks.md) for the boundary between the reusable core and the synthetic agent demo.
+See [Framework and cookbook architecture](docs/framework-and-cookbooks.md) for the boundary between the reusable core and the synthetic agent demo, and [project configuration](docs/configuration.md) for the `openaria.yml` schema.
 
 ## Safety and clean-room policy
 
