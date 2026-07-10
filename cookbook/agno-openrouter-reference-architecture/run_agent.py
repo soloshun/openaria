@@ -34,6 +34,18 @@ def build_agent(base_url: str, model_id: str):
         log_text = "\n".join(logs) if isinstance(logs, list) else str(logs)
         return diagnose_text(log_text, project_config.rules).model_dump(mode="json")
 
+    def read_runbook(name: str) -> dict[str, str]:
+        """Read one synthetic project runbook by name before recommending a change."""
+        knowledge = _get_json(base_url, f"/knowledge/runbooks/{name}")
+        assert isinstance(knowledge, dict)
+        return {str(key): str(value) for key, value in knowledge.items()}
+
+    def read_playbook(name: str) -> dict[str, str]:
+        """Read one allowlisted synthetic playbook by name; it is recommendation-only."""
+        knowledge = _get_json(base_url, f"/knowledge/playbooks/{name}")
+        assert isinstance(knowledge, dict)
+        return {str(key): str(value) for key, value in knowledge.items()}
+
     def record_framework_diagnosis(incident_id: str) -> dict[str, str]:
         """Store the configured OpenARIA diagnosis in this cookbook's local SQLite memory."""
         incident_data = get_incident(incident_id)
@@ -74,6 +86,8 @@ def build_agent(base_url: str, model_id: str):
             get_incident,
             get_context,
             get_framework_diagnosis,
+            read_runbook,
+            read_playbook,
             record_framework_diagnosis,
             propose_playbook,
             request_approval,
@@ -82,7 +96,8 @@ def build_agent(base_url: str, model_id: str):
             "Investigate only the supplied synthetic incident.",
             (
                 "Call get_incident and get_framework_diagnosis, then retrieve schema, lineage, "
-                "runbook, playbook, and verification."
+                "verification, then read_runbook('schema-drift-investigation') and "
+                "read_playbook('schema_mismatch_in_dataframe')."
             ),
             (
                 "Call record_framework_diagnosis to write the validated diagnosis "

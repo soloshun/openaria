@@ -4,9 +4,9 @@ This is a separate application that uses OpenARIA's framework ideas to demonstra
 
 ## What it demonstrates
 
-- A manually started FastAPI service simulates the pipeline estate, telemetry, lineage, runbook, playbook, and verification context.
+- A manually started FastAPI service simulates the pipeline estate, telemetry, lineage, verification context, and a separate Markdown knowledge library.
 - An Agno agent uses OpenRouter only when `OPENROUTER_API_KEY` is explicitly set.
-- The agent has bounded tools for `get_incident`, `get_context`, `get_framework_diagnosis`, `record_framework_diagnosis`, `propose_playbook`, and `request_approval`.
+- The agent has bounded tools for `get_incident`, `get_context`, `get_framework_diagnosis`, `read_runbook`, `read_playbook`, `record_framework_diagnosis`, `propose_playbook`, and `request_approval`.
 - `get_framework_diagnosis` runs the cookbook's `openaria.yml` and `rules.yml` through OpenARIA, proving that the application uses the framework rather than hardcoding a diagnosis rule in the agent.
 - The agent may investigate and propose the synthetic allowlisted playbook, but it cannot execute an action.
 - The proposed schema change requires human approval; verification remains `not_run` because no remediation runs.
@@ -36,7 +36,16 @@ export OPENARIA_DEMO_MODEL="openai/gpt-4o-mini"
 uv run python run_agent.py
 ```
 
-The agent should inspect the synthetic incident, logs, schema, lineage, runbook, playbook, and verification information; record the validated deterministic diagnosis in local OpenARIA memory; propose the configured playbook; and leave approval pending for a human. It cannot execute a remediation.
+The agent should inspect the synthetic incident, telemetry, schema, lineage, and verification information; read the separate runbook and allowlisted playbook; record the validated deterministic diagnosis in local OpenARIA memory; propose the configured playbook; and leave approval pending for a human. It cannot execute a remediation.
+
+## Knowledge library
+
+The cookbook stores project knowledge separately from telemetry:
+
+- `knowledge/runbooks/schema-drift-investigation.md` explains how to investigate a schema drift incident.
+- `knowledge/playbooks/schema_mismatch_in_dataframe.md` defines the allowlisted recommendation and its approval boundary.
+
+The FastAPI service exposes each document through a bounded read-only endpoint. This models how a real project can keep runbooks and playbooks in version-controlled Markdown while giving an agent only the documents it needs.
 
 ## Safety boundary
 

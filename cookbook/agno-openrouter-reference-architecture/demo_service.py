@@ -1,5 +1,7 @@
 """Cookbook-owned FastAPI simulator for one synthetic pipeline incident."""
 
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
 
 app = FastAPI(title="OpenARIA synthetic incident estate", version="0.1.0")
@@ -25,10 +27,10 @@ _CONTEXT = {
         "expected": ["Date", "Open", "High", "Low", "Close", "Volume"],
         "current": ["Date", "Open", "High", "Low", "closing_price", "Volume"],
     },
-    "runbook": "Compare the current schema with the last successful run before changing a mapping.",
-    "playbook": "schema_mismatch_in_dataframe is recommendation-only and requires approval.",
     "verification": {"status": "not_run", "notes": "No remediation is available in this cookbook."},
 }
+
+_KNOWLEDGE_ROOT = Path(__file__).parent / "knowledge"
 
 
 def _require_incident(incident_id: str) -> None:
@@ -50,3 +52,17 @@ def get_context(incident_id: str, context_name: str) -> object:
     if context_name not in _CONTEXT:
         raise HTTPException(status_code=404, detail="Synthetic context item not found")
     return _CONTEXT[context_name]
+
+
+@app.get("/knowledge/{knowledge_type}/{document_name}")
+def read_knowledge(knowledge_type: str, document_name: str) -> dict[str, str]:
+    """Return one cookbook-owned runbook or playbook Markdown document."""
+    if knowledge_type not in {"runbooks", "playbooks"}:
+        raise HTTPException(status_code=404, detail="Knowledge type not found")
+    if Path(document_name).name != document_name:
+        raise HTTPException(status_code=400, detail="Invalid knowledge document name")
+
+    document_path = _KNOWLEDGE_ROOT / knowledge_type / f"{document_name}.md"
+    if not document_path.is_file():
+        raise HTTPException(status_code=404, detail="Knowledge document not found")
+    return {"name": document_name, "content": document_path.read_text(encoding="utf-8")}
