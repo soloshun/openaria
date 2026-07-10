@@ -19,6 +19,10 @@ The core owns stable, typed interfaces and safe default behavior:
 
 The core does **not** own a live agent, a cloud account, a perpetual monitor, production credentials, direct remediation access, synthetic business scenarios, or project-specific rules/playbooks.
 
+## Framework extension points
+
+The `openaria.llm` and `openaria.lifecycle` modules are intentionally small public extension surfaces, not leftover application code. `llm` defines an optional provider-neutral gateway, structured response validation, and redaction; `lifecycle` defines typed contracts for context, policy, approval, planning, verification, and audit events. The initial cookbooks use configuration, diagnosis, reports, and local memory directly, while future adapters can implement these contracts without putting an agent or vendor SDK in the core package.
+
 ## Cookbook responsibilities
 
 The first agentic cookbook will be an application that uses the core. It will contain its own optional dependencies, setup instructions, and synthetic data.
@@ -49,13 +53,11 @@ The cookbook simulates the paper's seven logical layers. The agentic reasoning s
 
 The agent should use narrow, named tools rather than one unrestricted context dump:
 
-1. `get_incident` retrieves the normalized incident.
-2. `get_logs`, `get_metrics`, and `get_lineage` retrieve only synthetic context for that incident.
-3. `search_memory` retrieves matching local incidents.
-4. `record_diagnosis` validates and stores a structured diagnosis in local memory.
-5. `propose_playbook` returns a recommendation from an allowlisted synthetic library.
-6. `request_approval` records an explicit human or fixture decision.
-7. `get_verification` retrieves a synthetic post-action result.
+1. `get_incident` and `get_context` retrieve bounded synthetic incident data.
+2. `get_framework_diagnosis` runs the cookbook configuration through the core deterministic engine.
+3. `read_runbook`, `read_playbook`, and `read_synthetic_code` read only cookbook-owned, allowlisted resources.
+4. `record_framework_diagnosis` stores a local framework report and `export_analysis` stores the final LLM Markdown report.
+5. `propose_playbook` and `request_approval` model a recommendation and explicit human decision boundary.
 
 These tools model the investigation and governance loop, not autonomous execution. A proposed playbook is the terminal action for the first cookbook.
 

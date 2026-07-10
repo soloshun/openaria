@@ -2,7 +2,7 @@
 
 from openaria.config import DeterministicRule
 from openaria.llm import ModelAssistanceConfig, ModelDiagnosisRequest, diagnose_with_optional_model
-from openaria.llm.redaction import redact_text
+from openaria.llm.redaction import redact_text, redact_value
 
 
 class FakeGateway:
@@ -81,6 +81,38 @@ def test_invalid_model_response_falls_back_to_deterministic_diagnosis() -> None:
 
 def test_redaction_masks_common_values() -> None:
     """The standalone redactor documents the baseline transformations."""
-    redacted = redact_text("API_TOKEN=abc Bearer def person@example.com")
+    redacted = redact_text(
+        "api_key=abc Bearer def person@example.com 415-555-2671 123-45-6789 "
+        "4111 1111 1111 1111 ghp_abcdefghijklmnopqrstuvwxyz AKIA1234567890ABCDEF"
+    )
 
-    assert redacted == "API_TOKEN=[REDACTED_SECRET] Bearer [REDACTED_TOKEN] [REDACTED_EMAIL]"
+    assert "abc" not in redacted
+    assert "person@example.com" not in redacted
+    assert "415-555-2671" not in redacted
+    assert "123-45-6789" not in redacted
+    assert "4111 1111 1111 1111" not in redacted
+    assert "ghp_abcdefghijklmnopqrstuvwxyz" not in redacted
+    assert "AKIA1234567890ABCDEF" not in redacted
+    assert "[REDACTED_SECRET]" in redacted
+    assert "[REDACTED_TOKEN]" in redacted
+    assert "[REDACTED_EMAIL]" in redacted
+    assert "[REDACTED_PHONE]" in redacted
+    assert "[REDACTED_SSN]" in redacted
+    assert "[REDACTED_CARD]" in redacted
+
+
+def test_redaction_handles_nested_tool_results() -> None:
+    """JSON-like context is safe to pass through the same redaction boundary."""
+    value = redact_value(
+        {
+            "owner": "person@example.com",
+            "api_key": 1234,
+            "items": ["password=unsafe"],
+        }
+    )
+
+    assert value == {
+        "owner": "[REDACTED_EMAIL]",
+        "api_key": "[REDACTED_SECRET]",
+        "items": ["password=[REDACTED_SECRET]"],
+    }

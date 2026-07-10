@@ -8,6 +8,7 @@ import httpx
 
 from openaria.config import load_config
 from openaria.incidents import incident_from_log
+from openaria.llm import redact_value
 from openaria.memory import SQLiteIncidentStore
 from openaria.reports import render_markdown_report
 from openaria.triage import diagnose_text
@@ -23,11 +24,13 @@ def build_agent(base_url: str, model_id: str):
 
     def get_incident(incident_id: str) -> dict[str, object]:
         """Retrieve the normalized synthetic incident by its ID."""
-        return _get_json(base_url, f"/incidents/{incident_id}")
+        incident = redact_value(_get_json(base_url, f"/incidents/{incident_id}"))
+        assert isinstance(incident, dict)
+        return incident
 
     def get_context(incident_id: str, context_name: str) -> object:
         """Retrieve one synthetic context item from the bounded demo service."""
-        return _get_json(base_url, f"/incidents/{incident_id}/context/{context_name}")
+        return redact_value(_get_json(base_url, f"/incidents/{incident_id}/context/{context_name}"))
 
     def get_framework_diagnosis(incident_id: str) -> dict[str, object]:
         """Run the OpenARIA configured deterministic diagnosis over the synthetic logs."""
@@ -37,19 +40,19 @@ def build_agent(base_url: str, model_id: str):
 
     def read_runbook(name: str) -> dict[str, str]:
         """Read one synthetic project runbook by name before recommending a change."""
-        knowledge = _get_json(base_url, f"/knowledge/runbooks/{name}")
+        knowledge = redact_value(_get_json(base_url, f"/knowledge/runbooks/{name}"))
         assert isinstance(knowledge, dict)
         return {str(key): str(value) for key, value in knowledge.items()}
 
     def read_playbook(name: str) -> dict[str, str]:
         """Read one allowlisted synthetic playbook by name; it is recommendation-only."""
-        knowledge = _get_json(base_url, f"/knowledge/playbooks/{name}")
+        knowledge = redact_value(_get_json(base_url, f"/knowledge/playbooks/{name}"))
         assert isinstance(knowledge, dict)
         return {str(key): str(value) for key, value in knowledge.items()}
 
     def read_synthetic_code(file_path: str) -> dict[str, str]:
         """Read one bounded synthetic code file for an unfamiliar incident."""
-        code = _get_json(base_url, f"/code/{file_path}")
+        code = redact_value(_get_json(base_url, f"/code/{file_path}"))
         assert isinstance(code, dict)
         return {str(key): str(value) for key, value in code.items()}
 
@@ -126,17 +129,18 @@ def build_agent(base_url: str, model_id: str):
         instructions=[
             "Investigate only the supplied synthetic incident.",
             (
-                "Call get_incident and get_framework_diagnosis, then retrieve schema, lineage, "
-                "verification, then read_runbook('schema-drift-investigation') and "
-                "read_playbook('schema_mismatch_in_dataframe')."
+                "Call get_incident, get_context, and get_framework_diagnosis first. For a "
+                "schema incident, read_runbook('schema-drift-investigation') and "
+                "read_playbook('schema_mismatch_in_dataframe'). For an unfamiliar code error, "
+                "call read_synthetic_code('src/price_transform.py')."
             ),
             (
                 "Call record_framework_diagnosis to write the validated diagnosis "
                 "to local OpenARIA memory."
             ),
             (
-                "Call propose_playbook and request_approval. Approval remains pending; "
-                "never claim execution."
+                "Call propose_playbook and request_approval only when the configured playbook "
+                "is relevant."
             ),
             "Separate confirmed facts from hypotheses and state missing evidence.",
             "Propose only the provided playbook. Do not claim to execute it.",
@@ -156,7 +160,7 @@ def save_deterministic_result_if_matched(base_url: str, incident_id: str) -> boo
     """Save and print a deterministic result, returning false only for unknown incidents."""
     cookbook_dir = Path(__file__).parent
     project_config = load_config(cookbook_dir / "openaria.yml")
-    logs = _get_json(base_url, f"/incidents/{incident_id}/context/logs")
+    logs = redact_value(_get_json(base_url, f"/incidents/{incident_id}/context/logs"))
     log_text = "\n".join(logs) if isinstance(logs, list) else str(logs)
     diagnosis = diagnose_text(log_text, project_config.rules)
     if diagnosis.triage.classification == "unknown":

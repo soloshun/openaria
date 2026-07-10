@@ -6,7 +6,7 @@ This is a separate application that uses OpenARIA's framework ideas to demonstra
 
 - A manually started FastAPI service simulates the pipeline estate, telemetry, lineage, verification context, and a separate Markdown knowledge library.
 - An Agno agent uses OpenRouter only when `OPENROUTER_API_KEY` is explicitly set.
-- The agent has bounded tools for `get_incident`, `get_context`, `get_framework_diagnosis`, `read_runbook`, `read_playbook`, `record_framework_diagnosis`, `propose_playbook`, and `request_approval`.
+- The agent has bounded tools for incident/context retrieval, framework diagnosis, runbook/playbook and synthetic-code reads, local diagnosis recording, approval requests, and final Markdown export.
 - `get_framework_diagnosis` runs the cookbook's `openaria.yml` and `rules.yml` through OpenARIA, proving that the application uses the framework rather than hardcoding a diagnosis rule in the agent.
 - The agent may investigate and propose the synthetic allowlisted playbook, but it cannot execute an action.
 - The proposed schema change requires human approval; verification remains `not_run` because no remediation runs.
@@ -20,31 +20,50 @@ uv sync
 cp .env.example .env
 ```
 
-Set `OPENROUTER_API_KEY` in your shell or `.env` loader of choice. Never commit it.
-
 Start the synthetic service in one terminal:
 
 ```bash
 uv run uvicorn demo_service:app --reload
 ```
 
-In another terminal, run the opt-in agent:
+In another terminal, choose one of the scenarios below. The first scenario needs no model key; the other two deliberately bypass the configured deterministic rule and require an OpenRouter key.
+
+### 1. Configured schema drift (deterministic only)
+
+```bash
+uv run python run_agent.py --incident-id schema-drift-001
+```
+
+The `KeyError: 'Close'` signature matches `rules.yml`. OpenARIA writes `.openaria/reports/schema-drift-001-deterministic.md` and a local SQLite memory record. No LLM request is made.
+
+### 2. Unfamiliar code error (LLM investigation)
 
 ```bash
 export OPENROUTER_API_KEY="..."
-export OPENARIA_DEMO_MODEL="openai/gpt-4o-mini"
-uv run python run_agent.py
-```
-
-For `schema-drift-001`, the cookbook's configured deterministic rule matches first. OpenARIA saves that deterministic report locally and does not call the LLM. For an unknown incident, the agent inspects telemetry and project knowledge; reads code when relevant; and must export its final Markdown through the explicit `export_analysis` tool.
-
-For the intentionally unfamiliar incident, run:
-
-```bash
+export OPENARIA_DEMO_MODEL="deepseek/deepseek-v4-flash"
 uv run python run_agent.py --incident-id code-error-001
 ```
 
-This incident does not match the cookbook's deterministic rule. The agent can call `read_synthetic_code` to inspect the synthetic source file, then must call `export_analysis` exactly once to save its final Markdown analysis under `.openaria/reports/` and local incident memory.
+This incident has an unfamiliar `adjusted_price` error, so the agent can inspect `synthetic_project/src/price_transform.py`. Once it has investigated, it must call `export_analysis` exactly once. That tool writes the final human-readable report to `.openaria/reports/code-error-001-llm.md` and records it in local SQLite memory.
+
+### 3. Sensitive data in telemetry (LLM investigation with redaction)
+
+```bash
+export OPENROUTER_API_KEY="..."
+uv run python run_agent.py --incident-id pii-leak-001
+```
+
+This synthetic incident contains an email address, API key, phone number, SSN, and test card number in its source telemetry. The FastAPI service models an unsafe upstream payload; it is not what the model sees. OpenARIA redacts JSON-like tool responses before the agent receives them, so the agent sees markers such as `[REDACTED_EMAIL]` and `[REDACTED_SECRET]`, and its final report is saved as `.openaria/reports/pii-leak-001-llm.md`.
+
+Do not place real credentials or personal data in this cookbook. The redactor is a conservative demonstration baseline, not a complete organization-specific DLP system.
+
+## How the investigation flows
+
+1. `run_agent.py` first runs the cookbook's `openaria.yml` and `rules.yml` through OpenARIA's deterministic diagnosis engine.
+2. A rule match produces the deterministic report immediately. An unknown diagnosis requires an explicitly configured OpenRouter call.
+3. The agent can only access named, read-only tools: incident metadata, individual context items, selected Markdown knowledge, and one allowlisted synthetic code directory.
+4. The agent may recommend a playbook and request human approval, but has no execution tool.
+5. For an LLM scenario, `export_analysis` is the required final tool. It persists the model's Markdown rather than losing the agent's more readable explanation in terminal output.
 
 ## Knowledge library
 
@@ -57,7 +76,7 @@ The FastAPI service exposes each document through a bounded read-only endpoint. 
 
 ## Safety boundary
 
-All data is synthetic. The service has no write endpoint. The agent has no shell, unrestricted web-search, cloud, database, or remediation tool. Live model calls are opt-in and must not run in CI.
+All data is synthetic. The service has no write endpoint. The agent has no shell, unrestricted web-search, cloud, database, or remediation tool. Sensitive values are redacted before context reaches an agent tool or framework diagnostic report. Live model calls are opt-in and must not run in CI.
 
 ## Relation to OpenARIA
 
