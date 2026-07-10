@@ -5,12 +5,13 @@ build-backend = "hatchling.build"
 [project]
 name = "openaria"
 version = "0.1.0"
-description = "Vendor-agnostic, guarded self-healing for data, ML, and software delivery pipelines."
+description = "Vendor-agnostic Diagnosis-as-Code for data, ML, and software delivery pipelines."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { file = "LICENSE" }
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 authors = [{ name = "Solomon Eshun", email = "solomoneshun373@gmail.com" }]
-keywords = ["aiops", "incident-management", "mlops", "observability", "pipeline-reliability"]
+keywords = ["aiops", "diagnosis-as-code", "incident-management", "mlops", "observability", "pipeline-reliability"]
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
   "Intended Audience :: Developers",
@@ -26,6 +27,12 @@ dependencies = [
   "pyyaml>=6.0,<7",
   "typer>=0.15,<1",
 ]
+
+[project.urls]
+Homepage = "https://github.com/soloshun/openaria"
+Documentation = "https://github.com/soloshun/openaria/blob/main/docs/OPENARIA_CORE_REFERENCE.md"
+Repository = "https://github.com/soloshun/openaria"
+Issues = "https://github.com/soloshun/openaria/issues"
 
 [project.scripts]
 openaria = "openaria.cli:main"

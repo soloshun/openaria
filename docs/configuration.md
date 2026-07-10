@@ -2,7 +2,9 @@
 
 OpenARIA is a framework. A project tells it what to diagnose through an `openaria.yml` file. The framework reads that configuration, evaluates its rules against an incident, writes a structured report, and saves local incident memory.
 
-The configuration belongs to the consuming project or cookbook, not to OpenARIA itself.
+The configuration belongs to the consuming project or cookbook, not to OpenARIA itself. This is the practical expression of OpenARIA's vendor-agnostic design: the core provides the behavior, while each project owns its signals, diagnosis rules, report location, and local memory.
+
+For the broader architecture, claim boundaries, CLI reference, lifecycle contracts, and website handoff source, read the [OpenARIA Core Reference](OPENARIA_CORE_REFERENCE.md).
 
 ## Complete example
 

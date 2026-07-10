@@ -1,5 +1,7 @@
 # Framework and cookbook architecture
 
+This page explains one boundary within the project. For the complete core narrative, public API model, paper mapping, and documentation-site handoff, start with the [OpenARIA Core Reference](OPENARIA_CORE_REFERENCE.md).
+
 ## Purpose
 
 OpenARIA is a lightweight, vendor-agnostic framework for diagnosing pipeline incidents. Its reusable core should not depend on a specific orchestrator, web server, model provider, or agent framework.
