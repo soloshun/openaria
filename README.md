@@ -250,7 +250,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), [GOVERNANCE.md](GOVERNANCE.md), [SUPPORT
 
 ## Releases
 
-OpenARIA releases are manually dispatched through GitHub Actions and published with PyPI Trusted Publishing; no long-lived PyPI token is stored in the repository. See the [release guide](docs/releasing.md) for the one-time account setup and TestPyPI-first procedure.
+OpenARIA releases are manually dispatched through GitHub Actions and published with PyPI Trusted Publishing; no long-lived PyPI token is stored in the repository. See the [release guide](docs/releasing.md) for the one-time account setup, TestPyPI-first procedure, and clean-room verification script.
 
 ## Research and standards context
 

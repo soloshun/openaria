@@ -37,16 +37,13 @@ A pending publisher does not reserve a package name; it becomes a normal publish
 
 3. Commit and push the version change to `main`.
 4. In GitHub Actions, run **Release package** manually. Enter the exact declared version and choose `testpypi`.
-5. Test the result from a clean environment:
+5. Test the result from a clean environment. This script creates a temporary virtual environment, installs only the published package, checks the import and CLI version, exercises initialization, doctor, and rule validation, prints the result, and removes all temporary files when it exits:
 
    ```bash
-   uv venv /tmp/openaria-test
-   /tmp/openaria-test/bin/python -m pip install \
-     --index-url https://test.pypi.org/simple/ \
-     --extra-index-url https://pypi.org/simple/ \
-     openaria==0.0.1
-   /tmp/openaria-test/bin/openaria --version
+   bash scripts/verify_published_package.sh openaria 0.0.1
    ```
+
+   Pass `https://pypi.org/simple/` as the third argument when verifying a production PyPI release.
 
 6. Run **Release package** again with the same version and select `pypi`. The `pypi` environment provides the manual approval boundary.
 
