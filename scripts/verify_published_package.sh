@@ -4,7 +4,7 @@
 set -euo pipefail
 
 PACKAGE_NAME="${1:-lumis-sdk}"
-PACKAGE_VERSION="${2:-0.0.2}"
+PACKAGE_VERSION="${2:-0.0.3}"
 INDEX_URL="${3:-https://pypi.org/simple/}"
 EXTRA_INDEX_URL="${4:-https://pypi.org/simple/}"
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/lumis-sdk-publish-check.XXXXXX")"
@@ -23,11 +23,18 @@ echo "  index:   $INDEX_URL"
 echo "  work:    $WORK_DIR"
 
 uv venv "$VENV_DIR" --python 3.11 >/dev/null
-uv pip install \
-  --python "$PYTHON" \
-  --index-url "$INDEX_URL" \
-  --extra-index-url "$EXTRA_INDEX_URL" \
-  "$PACKAGE_NAME==$PACKAGE_VERSION" >/dev/null
+INSTALL_ARGS=(
+  --python "$PYTHON"
+  --index-url "$INDEX_URL"
+  --refresh-package "$PACKAGE_NAME"
+)
+if [[ "$INDEX_URL" != "$EXTRA_INDEX_URL" ]]; then
+  INSTALL_ARGS+=(
+    --extra-index-url "$EXTRA_INDEX_URL"
+    --index-strategy unsafe-best-match
+  )
+fi
+uv pip install "${INSTALL_ARGS[@]}" "$PACKAGE_NAME==$PACKAGE_VERSION" >/dev/null
 
 INSTALLED_VERSION="$($PYTHON -c 'import lumis_sdk; print(lumis_sdk.__version__)')"
 if [[ "$INSTALLED_VERSION" != "$PACKAGE_VERSION" ]]; then
