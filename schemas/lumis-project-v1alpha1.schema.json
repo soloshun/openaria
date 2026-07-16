@@ -61,6 +61,119 @@
       "title": "EvidenceProviderConfig",
       "type": "object"
     },
+    "HttpJsonEvidenceProviderConfig": {
+      "additionalProperties": false,
+      "description": "Configuration for the independent generic HTTP JSON evidence connector.",
+      "properties": {
+        "allowedOrigins": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Allowedorigins",
+          "type": "array"
+        },
+        "authHeader": {
+          "default": "Authorization",
+          "pattern": "^[!#$%&'*+\\-.^_`|~0-9A-Za-z]+$",
+          "title": "Authheader",
+          "type": "string"
+        },
+        "authScheme": {
+          "default": "Bearer",
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[^\\r\\n]+$",
+          "title": "Authscheme",
+          "type": "string"
+        },
+        "kinds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Kinds",
+          "type": "array"
+        },
+        "maxItemCharacters": {
+          "default": 8000,
+          "maximum": 100000,
+          "minimum": 1,
+          "title": "Maxitemcharacters",
+          "type": "integer"
+        },
+        "maxItems": {
+          "default": 25,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Maxitems",
+          "type": "integer"
+        },
+        "maxResponseBytes": {
+          "default": 1048576,
+          "maximum": 10485760,
+          "minimum": 1,
+          "title": "Maxresponsebytes",
+          "type": "integer"
+        },
+        "maxTotalCharacters": {
+          "default": 131072,
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "Maxtotalcharacters",
+          "type": "integer"
+        },
+        "provider": {
+          "const": "http-json",
+          "title": "Provider",
+          "type": "string"
+        },
+        "redact": {
+          "default": true,
+          "title": "Redact",
+          "type": "boolean"
+        },
+        "retries": {
+          "default": 0,
+          "maximum": 3,
+          "minimum": 0,
+          "title": "Retries",
+          "type": "integer"
+        },
+        "timeoutSeconds": {
+          "default": 5.0,
+          "exclusiveMinimum": 0,
+          "maximum": 60,
+          "title": "Timeoutseconds",
+          "type": "number"
+        },
+        "tokenEnv": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tokenenv"
+        },
+        "url": {
+          "maxLength": 2048,
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "url",
+        "allowedOrigins"
+      ],
+      "title": "HttpJsonEvidenceProviderConfig",
+      "type": "object"
+    },
     "IncidentSourceConfig": {
       "additionalProperties": false,
       "description": "One configured local incident source for v1alpha1.",
@@ -137,6 +250,48 @@
       "title": "ObjectMetadata",
       "type": "object"
     },
+    "PostgresMemoryConfig": {
+      "additionalProperties": false,
+      "description": "Configuration for an optional independently packaged PostgreSQL store.",
+      "properties": {
+        "connectTimeoutSeconds": {
+          "default": 10,
+          "maximum": 60,
+          "minimum": 1,
+          "title": "Connecttimeoutseconds",
+          "type": "integer"
+        },
+        "connectionUrlEnv": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "title": "Connectionurlenv",
+          "type": "string"
+        },
+        "maxSearchCandidates": {
+          "default": 1000,
+          "maximum": 10000,
+          "minimum": 1,
+          "title": "Maxsearchcandidates",
+          "type": "integer"
+        },
+        "provider": {
+          "const": "postgres",
+          "title": "Provider",
+          "type": "string"
+        },
+        "schema": {
+          "default": "lumis_memory",
+          "pattern": "^[a-z_][a-z0-9_]{0,62}$",
+          "title": "Schema",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "connectionUrlEnv"
+      ],
+      "title": "PostgresMemoryConfig",
+      "type": "object"
+    },
     "ProjectSpec": {
       "additionalProperties": false,
       "description": "The v1alpha1 project specification.",
@@ -148,7 +303,14 @@
         },
         "evidenceProviders": {
           "items": {
-            "$ref": "#/$defs/EvidenceProviderConfig"
+            "anyOf": [
+              {
+                "$ref": "#/$defs/EvidenceProviderConfig"
+              },
+              {
+                "$ref": "#/$defs/HttpJsonEvidenceProviderConfig"
+              }
+            ]
           },
           "title": "Evidenceproviders",
           "type": "array"
@@ -161,7 +323,15 @@
           "type": "array"
         },
         "memory": {
-          "$ref": "#/$defs/MemoryConfig"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MemoryConfig"
+            },
+            {
+              "$ref": "#/$defs/PostgresMemoryConfig"
+            }
+          ],
+          "title": "Memory"
         },
         "model": {
           "$ref": "#/$defs/ModelConfig"

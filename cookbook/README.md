@@ -14,6 +14,8 @@ Cookbooks are small, runnable teaching projects that use Lumis SDK core in a spe
 | [structured-rule-evaluation](structured-rule-evaluation/README.md) | Compound structured fields, required evidence, deterministic ranking, and JSON explanations. | None |
 | [evidence-json-reporting](evidence-json-reporting/README.md) | Bounded local evidence collection, redaction, required evidence, and versioned JSON reports. | None |
 | [plugin-package](plugin-package/README.md) | Independently packaged static manifest, lazy discovery, explicit loading, and contract testing. | None |
+| [postgres-memory](postgres-memory/README.md) | Two processes share one explicit confirmed episode through the optional PostgreSQL plugin. | None |
+| [webhook-http-evidence](webhook-http-evidence/README.md) | Authenticated replay-protected webhook normalization plus an offline HTTP JSON evidence plugin fixture. | None |
 
 ## Shared structure
 

@@ -2,6 +2,7 @@
 
 import re
 from typing import Literal
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -11,6 +12,7 @@ PROJECT_API_VERSION = "lumis.dev/v1alpha1"
 PROJECT_KIND = "Project"
 RULE_SET_KIND = "DiagnosisRuleSet"
 DIAGNOSIS_RULE_KIND = "DiagnosisRule"
+_HTTP_HEADER_NAME = r"^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$"
 
 
 class StrictModel(BaseModel):
@@ -24,6 +26,36 @@ class MemoryConfig(StrictModel):
 
     provider: Literal["sqlite"] = "sqlite"
     path: str = ".lumis/incidents.db"
+
+
+class PostgresMemoryConfig(StrictModel):
+    """Configuration for an optional independently packaged PostgreSQL store."""
+
+    provider: Literal["postgres"]
+    connection_url_env: str = Field(
+        alias="connectionUrlEnv",
+        pattern=r"^[A-Za-z_][A-Za-z0-9_]*$",
+    )
+    schema_name: str = Field(
+        default="lumis_memory",
+        alias="schema",
+        pattern=r"^[a-z_][a-z0-9_]{0,62}$",
+    )
+    connect_timeout_seconds: int = Field(
+        default=10,
+        ge=1,
+        le=60,
+        alias="connectTimeoutSeconds",
+    )
+    max_search_candidates: int = Field(
+        default=1_000,
+        ge=1,
+        le=10_000,
+        alias="maxSearchCandidates",
+    )
+
+
+ProjectMemoryConfig = MemoryConfig | PostgresMemoryConfig
 
 
 class ReportsConfig(StrictModel):
@@ -68,6 +100,77 @@ class EvidenceProviderConfig(StrictModel):
     redact: bool = True
 
 
+class HttpJsonEvidenceProviderConfig(StrictModel):
+    """Configuration for the independent generic HTTP JSON evidence connector."""
+
+    provider: Literal["http-json"]
+    url: str = Field(max_length=2_048)
+    allowed_origins: list[str] = Field(
+        min_length=1,
+        max_length=32,
+        alias="allowedOrigins",
+    )
+    token_env: str | None = Field(
+        default=None,
+        alias="tokenEnv",
+        pattern=r"^[A-Za-z_][A-Za-z0-9_]*$",
+    )
+    auth_header: str = Field(
+        default="Authorization",
+        alias="authHeader",
+        pattern=_HTTP_HEADER_NAME,
+    )
+    auth_scheme: str = Field(
+        default="Bearer",
+        alias="authScheme",
+        min_length=1,
+        max_length=100,
+        pattern=r"^[^\r\n]+$",
+    )
+    kinds: list[str] = Field(default_factory=list)
+    max_items: int = Field(default=25, ge=1, le=100, alias="maxItems")
+    max_total_characters: int = Field(
+        default=131_072,
+        ge=1,
+        le=1_000_000,
+        alias="maxTotalCharacters",
+    )
+    max_item_characters: int = Field(
+        default=8_000,
+        ge=1,
+        le=100_000,
+        alias="maxItemCharacters",
+    )
+    max_response_bytes: int = Field(
+        default=1_048_576,
+        ge=1,
+        le=10_485_760,
+        alias="maxResponseBytes",
+    )
+    timeout_seconds: float = Field(
+        default=5.0,
+        gt=0,
+        le=60,
+        alias="timeoutSeconds",
+    )
+    retries: int = Field(default=0, ge=0, le=3)
+    redact: bool = True
+
+    @model_validator(mode="after")
+    def require_allowlisted_https_destination(self) -> "HttpJsonEvidenceProviderConfig":
+        destination = _normalized_https_origin(self.url)
+        origins = [_normalized_https_origin(value) for value in self.allowed_origins]
+        if len(origins) != len(set(origins)):
+            raise ValueError("allowedOrigins must be unique")
+        if destination not in origins:
+            raise ValueError("HTTP evidence destination origin must appear in allowedOrigins")
+        self.allowed_origins = origins
+        return self
+
+
+ProjectEvidenceProviderConfig = EvidenceProviderConfig | HttpJsonEvidenceProviderConfig
+
+
 class RulesConfig(StrictModel):
     """Paths to versioned deterministic rule-set documents."""
 
@@ -97,12 +200,12 @@ class ProjectSpec(StrictModel):
     """The v1alpha1 project specification."""
 
     environment: str = "local"
-    memory: MemoryConfig = Field(default_factory=MemoryConfig)
+    memory: ProjectMemoryConfig = Field(default_factory=MemoryConfig)
     reports: ReportsConfig = Field(default_factory=ReportsConfig)
     incident_sources: list[IncidentSourceConfig] = Field(
         default_factory=list, alias="incidentSources"
     )
-    evidence_providers: list[EvidenceProviderConfig] = Field(
+    evidence_providers: list[ProjectEvidenceProviderConfig] = Field(
         default_factory=list, alias="evidenceProviders"
     )
     rules: RulesConfig = Field(default_factory=RulesConfig)
@@ -312,12 +415,27 @@ class LumisConfig(StrictModel):
 
     project: str
     environment: str = "local"
-    memory: MemoryConfig = Field(default_factory=MemoryConfig)
+    memory: ProjectMemoryConfig = Field(default_factory=MemoryConfig)
     reports: ReportsConfig = Field(default_factory=ReportsConfig)
     incident_sources: list[IncidentSourceConfig] = Field(default_factory=list)
-    evidence_providers: list[EvidenceProviderConfig] = Field(default_factory=list)
+    evidence_providers: list[ProjectEvidenceProviderConfig] = Field(default_factory=list)
     rules_files: list[str] = Field(default_factory=list)
     rules: list[DeterministicRule] = Field(default_factory=list)
     structured_rules: list[DiagnosisRuleDocument] = Field(default_factory=list)
     model: ModelConfig = Field(default_factory=ModelConfig)
     source_api_version: Literal["lumis.dev/v1alpha1"] = "lumis.dev/v1alpha1"
+
+
+def _normalized_https_origin(value: str) -> str:
+    parsed = urlsplit(value)
+    if parsed.scheme.lower() != "https" or not parsed.hostname:
+        raise ValueError("HTTP evidence URLs and origins must use https")
+    if parsed.username is not None or parsed.password is not None:
+        raise ValueError("HTTP evidence URLs must not contain credentials")
+    if parsed.fragment:
+        raise ValueError("HTTP evidence URLs must not contain fragments")
+    port = parsed.port
+    authority = parsed.hostname.lower()
+    if port is not None and port != 443:
+        authority = f"{authority}:{port}"
+    return f"https://{authority}"

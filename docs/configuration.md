@@ -44,8 +44,8 @@ spec:
 | `metadata.name` | Yes | Stable project/pipeline identifier used in incidents and reports. |
 | `metadata.labels` | No | Project-owned string labels for future adapters and policy. |
 | `spec.environment` | No | Environment label; defaults to `local`. |
-| `spec.memory.provider` | No | `sqlite` in the reference package. Other providers implement a port. |
-| `spec.memory.path` | No | Local SQLite path, relative to project YAML. |
+| `spec.memory.provider` | No | `sqlite` by default; `postgres` selects the optional plugin configuration. |
+| `spec.memory.path` | No | Local SQLite path, relative to project YAML. SQLite only. |
 | `spec.reports.provider` | No | `markdown` or `json` in the reference package. |
 | `spec.reports.outputDir` | No | Report directory, relative to project YAML. |
 | `spec.incidentSources` | No | Bounded source declarations. v1alpha1 includes `local-log`. |
@@ -69,6 +69,50 @@ spec:
 Provider errors, malformed files, timeouts, and unreadable paths become structured collection
 failures. They do not silently become facts and do not grant network, execution, or broader
 filesystem authority.
+
+### HTTP JSON evidence fields
+
+The optional `lumis-sdk-http-json-evidence` package uses the following strict configuration:
+
+| Field | Meaning |
+| --- | --- |
+| `url` | Exact HTTPS endpoint. Embedded credentials and fragments are rejected. |
+| `allowedOrigins` | Required unique HTTPS origin allowlist; the configured URL origin must match. |
+| `tokenEnv` | Optional environment-variable name containing an authentication token. |
+| `authHeader` | Authentication header name; defaults to `Authorization`. |
+| `authScheme` | Authentication scheme; defaults to `Bearer`. |
+| `maxResponseBytes` | Streamed response-byte cap before JSON parsing. |
+| `timeoutSeconds` | HTTP client deadline, also enforced by `EvidenceService`. |
+| `retries` | Immediate bounded retries for timeouts, network failures, 429, and 5xx; 0 to 3. |
+
+The connector always disables redirects and sends minimized incident identity/environment fields,
+requested kinds, and bounds. It does not send `IncidentInput.raw_payload`. The reference CLI
+validates this configuration but does not load the optional plugin; applications compose it
+through the Python/plugin API.
+
+### PostgreSQL memory fields
+
+```yaml
+spec:
+  memory:
+    provider: postgres
+    connectionUrlEnv: LUMIS_MEMORY_DATABASE_URL
+    schema: lumis_memory
+    connectTimeoutSeconds: 10
+    maxSearchCandidates: 1000
+```
+
+| Field | Meaning |
+| --- | --- |
+| `connectionUrlEnv` | Required environment-variable name containing the connection URL. Never the URL itself. |
+| `schema` | Validated lowercase schema owned by the adapter. Defaults to `lumis_memory`. |
+| `connectTimeoutSeconds` | Per-operation connection timeout from 1 to 60 seconds. |
+| `maxSearchCandidates` | Maximum rows considered before public ranking; 1 to 10,000. |
+
+PostgreSQL requires the independently packaged `lumis-sdk-postgres-memory` plugin. Discovery does
+not grant its declared network or secret authorities. The reference report-aware CLI store remains
+SQLite-only; applications compose the asynchronous PostgreSQL `MemoryStore` through the Python
+and plugin API. See [RFC 0002](rfcs/0002-postgresql-memory.md).
 
 ## Rule-set document
 
@@ -167,7 +211,10 @@ that all checked schemas match the Pydantic contracts.
 
 ## Secrets
 
-Do not put plaintext credentials in project YAML. v1alpha1 intentionally has no generic secret string. Provider adapters should define typed secret references and document the environment or secret-manager boundary. Model providers cannot be selected by adding an undocumented field to core configuration.
+Do not put plaintext credentials in project YAML. PostgreSQL memory accepts only
+`connectionUrlEnv`, an environment-variable reference. Other provider adapters should define typed
+secret references and document the environment or secret-manager boundary. Model providers cannot
+be selected by adding an undocumented field to core configuration.
 
 ## Current limits
 
@@ -175,6 +222,8 @@ Do not put plaintext credentials in project YAML. v1alpha1 intentionally has no 
 - The reference CLI reads local logs up to ten MiB.
 - The local JSON evidence adapter reads files up to one MiB; collection applies configured item,
   per-item character, total-character, timeout, kind, duplicate-ID, and redaction limits.
+- The optional HTTP JSON connector additionally requires HTTPS, an exact origin allowlist,
+  redirect rejection, minimized outbound metadata, bounded retries, and a response-byte cap.
 - Legacy rule sets remain limited to deterministic `all_contains`.
 - Structured `DiagnosisRule` documents support `all`, `any`, `not`, regex, structured fields,
   numeric thresholds, required evidence, and deterministic ranking.

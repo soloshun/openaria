@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "lumis-sdk"
-version = "0.0.6"
+version = "0.0.7"
 description = "Vendor-agnostic, deterministic-first SDK for guarded incident recovery and response."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -42,7 +42,7 @@ lumis = "lumis_sdk.cli:main"
 [dependency-groups]
 dev = [
   "bandit>=1.8,<2",
-  "mypy>=1.14,<2",
+  "mypy>=1.14,<3",
   "pytest>=9.0.3,<10",
   "ruff>=0.9,<1",
   "types-pyyaml>=6.0.12,<7",

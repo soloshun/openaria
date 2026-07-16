@@ -22,6 +22,7 @@ from lumis_sdk.adapters.sqlite import IncidentNotFoundError, SQLiteIncidentStore
 from lumis_sdk.application import EvidenceService
 from lumis_sdk.config import (
     MAX_CONFIG_BYTES,
+    EvidenceProviderConfig,
     LumisConfig,
     load_config,
     load_diagnosis_rule,
@@ -108,8 +109,11 @@ def doctor(
         log_path = resolve_project_path(config, project_config.incident_sources[0].path)
         checks.append(("local log", "readable" if log_path.is_file() else f"missing: {log_path}"))
     for index, provider in enumerate(project_config.evidence_providers, start=1):
-        evidence_path = resolve_project_path(config, provider.path)
-        state = "readable" if evidence_path.is_file() else f"missing: {evidence_path}"
+        if isinstance(provider, EvidenceProviderConfig):
+            evidence_path = resolve_project_path(config, provider.path)
+            state = "readable" if evidence_path.is_file() else f"missing: {evidence_path}"
+        else:
+            state = "configured; compose the optional connector through the plugin API"
         checks.append((f"evidence provider {index} ({provider.provider})", state))
     for name, value in checks:
         typer.echo(f"{name}: {value}")
@@ -169,7 +173,7 @@ def diagnose(
     report_path = output or resolve_project_path(
         config, f"{project_config.reports.output_dir}/incident-report.{extension}"
     )
-    memory_path = resolve_project_path(config, project_config.memory.path)
+    memory_path = _memory_path(config, project_config)
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(report_text, encoding="utf-8")
     stored = SQLiteIncidentStore(memory_path).save(incident, diagnosis, report_text, report_path)
@@ -417,6 +421,13 @@ async def _collect_configured_evidence(
     collected: list[EvidenceItem] = []
     seen_ids: set[str] = set()
     for provider_config in project_config.evidence_providers:
+        if not isinstance(provider_config, EvidenceProviderConfig):
+            typer.echo(
+                f"warning: evidence provider {provider_config.provider} requires optional "
+                "plugin composition and is not loaded by the reference CLI",
+                err=True,
+            )
+            continue
         provider = LocalJsonEvidenceProvider(
             resolve_project_path(config_path, provider_config.path)
         )
@@ -466,8 +477,18 @@ def _render_report(
     return render_markdown_report(incident, diagnosis)
 
 
-def _memory_path(config_path: Path) -> Path:
-    project_config = _load_or_exit(config_path)
+def _memory_path(
+    config_path: Path,
+    project_config: LumisConfig | None = None,
+) -> Path:
+    project_config = project_config or _load_or_exit(config_path)
+    if project_config.memory.provider != "sqlite":
+        typer.echo(
+            "The reference CLI incident/report store currently requires memory.provider=sqlite. "
+            "Compose the optional PostgreSQL MemoryStore through the Python/plugin API.",
+            err=True,
+        )
+        raise typer.Exit(code=2)
     return resolve_project_path(config_path, project_config.memory.path)
 
 
