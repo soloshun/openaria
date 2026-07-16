@@ -35,3 +35,11 @@ def test_evidence_reporting_cookbook_uses_structured_rules_and_local_evidence() 
     assert config.evidence_providers[0].provider == "local-json"
     assert config.reports.provider == "json"
     assert resolve_project_path(config_path, config.evidence_providers[0].path).is_file()
+
+
+def test_webhook_connector_cookbook_uses_optional_http_config() -> None:
+    """The Sprint 3 connector proof loads without importing its optional package."""
+    config = load_config(ROOT / "cookbook/webhook-http-evidence/lumis.yml")
+
+    assert config.evidence_providers[0].provider == "http-json"
+    assert config.evidence_providers[0].allowed_origins == ["https://evidence.example.test"]

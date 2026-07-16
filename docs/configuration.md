@@ -70,6 +70,26 @@ Provider errors, malformed files, timeouts, and unreadable paths become structur
 failures. They do not silently become facts and do not grant network, execution, or broader
 filesystem authority.
 
+### HTTP JSON evidence fields
+
+The optional `lumis-sdk-http-json-evidence` package uses the following strict configuration:
+
+| Field | Meaning |
+| --- | --- |
+| `url` | Exact HTTPS endpoint. Embedded credentials and fragments are rejected. |
+| `allowedOrigins` | Required unique HTTPS origin allowlist; the configured URL origin must match. |
+| `tokenEnv` | Optional environment-variable name containing an authentication token. |
+| `authHeader` | Authentication header name; defaults to `Authorization`. |
+| `authScheme` | Authentication scheme; defaults to `Bearer`. |
+| `maxResponseBytes` | Streamed response-byte cap before JSON parsing. |
+| `timeoutSeconds` | HTTP client deadline, also enforced by `EvidenceService`. |
+| `retries` | Immediate bounded retries for timeouts, network failures, 429, and 5xx; 0 to 3. |
+
+The connector always disables redirects and sends minimized incident identity/environment fields,
+requested kinds, and bounds. It does not send `IncidentInput.raw_payload`. The reference CLI
+validates this configuration but does not load the optional plugin; applications compose it
+through the Python/plugin API.
+
 ### PostgreSQL memory fields
 
 ```yaml
@@ -202,6 +222,8 @@ be selected by adding an undocumented field to core configuration.
 - The reference CLI reads local logs up to ten MiB.
 - The local JSON evidence adapter reads files up to one MiB; collection applies configured item,
   per-item character, total-character, timeout, kind, duplicate-ID, and redaction limits.
+- The optional HTTP JSON connector additionally requires HTTPS, an exact origin allowlist,
+  redirect rejection, minimized outbound metadata, bounded retries, and a response-byte cap.
 - Legacy rule sets remain limited to deterministic `all_contains`.
 - Structured `DiagnosisRule` documents support `all`, `any`, `not`, regex, structured fields,
   numeric thresholds, required evidence, and deterministic ranking.

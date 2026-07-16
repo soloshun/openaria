@@ -61,7 +61,9 @@ Lumis SDK domain.
 Reference adapters provide deterministic rules, SQLite local memory, bounded local JSON evidence,
 Markdown or versioned JSON reports, and metadata-first plugin discovery. Provider-specific
 connectors belong in separate packages when practical. The repository includes an independently
-installable PostgreSQL memory plugin proof without adding its driver to core.
+installable PostgreSQL memory plugin and a generic HTTP JSON evidence plugin without adding their
+drivers to core. A framework-neutral webhook adapter authenticates and normalizes received bytes
+without embedding a hosted server.
 
 ### Testkit
 
