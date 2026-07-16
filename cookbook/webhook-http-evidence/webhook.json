@@ -1,0 +1,8 @@
+{
+  "pipeline": {
+    "name": "daily-orders"
+  },
+  "environment": "staging",
+  "status": "failed",
+  "error": "customer_id is missing"
+}

@@ -22,6 +22,7 @@ from lumis_sdk.adapters.sqlite import IncidentNotFoundError, SQLiteIncidentStore
 from lumis_sdk.application import EvidenceService
 from lumis_sdk.config import (
     MAX_CONFIG_BYTES,
+    EvidenceProviderConfig,
     LumisConfig,
     load_config,
     load_diagnosis_rule,
@@ -108,8 +109,11 @@ def doctor(
         log_path = resolve_project_path(config, project_config.incident_sources[0].path)
         checks.append(("local log", "readable" if log_path.is_file() else f"missing: {log_path}"))
     for index, provider in enumerate(project_config.evidence_providers, start=1):
-        evidence_path = resolve_project_path(config, provider.path)
-        state = "readable" if evidence_path.is_file() else f"missing: {evidence_path}"
+        if isinstance(provider, EvidenceProviderConfig):
+            evidence_path = resolve_project_path(config, provider.path)
+            state = "readable" if evidence_path.is_file() else f"missing: {evidence_path}"
+        else:
+            state = "configured; compose the optional connector through the plugin API"
         checks.append((f"evidence provider {index} ({provider.provider})", state))
     for name, value in checks:
         typer.echo(f"{name}: {value}")
@@ -417,6 +421,13 @@ async def _collect_configured_evidence(
     collected: list[EvidenceItem] = []
     seen_ids: set[str] = set()
     for provider_config in project_config.evidence_providers:
+        if not isinstance(provider_config, EvidenceProviderConfig):
+            typer.echo(
+                f"warning: evidence provider {provider_config.provider} requires optional "
+                "plugin composition and is not loaded by the reference CLI",
+                err=True,
+            )
+            continue
         provider = LocalJsonEvidenceProvider(
             resolve_project_path(config_path, provider_config.path)
         )

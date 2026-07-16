@@ -13,12 +13,19 @@ All notable changes to Lumis SDK are recorded here. The project follows the spir
 - Added strict secret-referenced PostgreSQL memory configuration and checked schema.
 - Added the independently installable `lumis-sdk-postgres-memory` plugin with serialized
   migrations, fixed SQL, explicit network/secrets authority, contract tests, and Docker cookbook.
+- Added framework-neutral HMAC webhook normalization with strict payload structure, timestamp
+  skew, delivery IDs, injectable replay protection, and hostile-input tests.
+- Added strict allowlisted HTTP JSON evidence configuration and the independently installable
+  `lumis-sdk-http-json-evidence` plugin with minimized requests, redirect rejection, bounded
+  retries/responses, structured failures, offline transport tests, and a fixture cookbook.
 
 ### Security
 
 - Memory idempotency conflicts and resolutions for absent incidents fail closed.
 - PostgreSQL credentials remain outside YAML, schema identifiers are validated and quoted, and
   candidate retrieval is bounded.
+- Webhook secrets and connector tokens remain environment references; forged, stale, replayed,
+  duplicate-key, deeply nested, oversized, redirected, and non-allowlisted inputs fail closed.
 
 ## [0.0.6] - 2026-07-16
 
