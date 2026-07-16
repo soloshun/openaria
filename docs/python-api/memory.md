@@ -19,10 +19,13 @@ episode and remains an explicit `ConfirmedResolution`; model text never changes 
 
 ## PostgreSQL plugin
 
-Install the independent package alongside Lumis SDK `0.0.7` or another compatible core release:
+The independent package is prepared at version `0.1.0`. Until its PyPI trusted publisher is
+registered in [issue #41](https://github.com/soloshun/lumis-sdk/issues/41), install it from a
+repository checkout alongside Lumis SDK `0.0.7` or another compatible core release:
 
 ```bash
-pip install lumis-sdk-postgres-memory
+pip install "lumis-sdk==0.0.7"
+pip install ./packages/lumis-sdk-postgres-memory
 ```
 
 ```python
