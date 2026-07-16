@@ -2,7 +2,23 @@
 
 All notable changes to Lumis SDK are recorded here. The project follows the spirit of [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and uses [Semantic Versioning](https://semver.org/) once release versions are established.
 
-## [0.0.1] - Unreleased
+## [0.0.2] - 2026-07-16
+
+### Added
+
+- Strict single-file `DiagnosisRule` documents with compound `all`/`any`/`not` evaluation,
+  structured and numeric conditions, required evidence, deterministic specificity ranking,
+  candidate explanations, JSON Schema, CLI fixture testing, and an `all_contains` migration path.
+- Open-source repository automation for `main`/`dev` CI, supported-Python testing, locked
+  dependency audits, Bandit SAST, Dependabot updates into `dev`, issue/PR templates, CODEOWNERS,
+  and a maintainer runbook.
+
+### Changed
+
+- Added Python 3.12 and 3.13 to the tested compatibility matrix.
+- Upgraded the development test dependency to a release that fixes CVE-2025-71176.
+
+## [0.0.1] - 2026-07-15
 
 ### Added
 
