@@ -63,7 +63,7 @@ def test_version_is_available() -> None:
     result = runner.invoke(app, ["--version"])
 
     assert result.exit_code == 0
-    assert result.output.strip() == "0.0.3"
+    assert result.output.strip() == "0.0.4"
 
 
 def test_diagnose_writes_an_evidence_grounded_report(tmp_path: Path) -> None:
@@ -231,6 +231,7 @@ spec:
     output = json.loads(result.output)
     assert output["matched"] is True
     assert output["winner"] == "schema-change"
+    assert output["diagnosis"]["missingEvidence"] == []
     assert output["candidates"][0]["evidenceReferences"] == ["schema://orders/diff"]
 
 
