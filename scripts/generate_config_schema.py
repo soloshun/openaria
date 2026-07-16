@@ -6,7 +6,12 @@ from pathlib import Path
 
 from lumis_sdk.adapters.reports import diagnosis_report_json_schema
 from lumis_sdk.config import diagnosis_rule_json_schema, project_json_schema, rules_json_schema
-from lumis_sdk.domain import plugin_manifest_json_schema
+from lumis_sdk.domain import (
+    playbook_json_schema,
+    plugin_manifest_json_schema,
+    policy_json_schema,
+    proposal_json_schema,
+)
 
 SCHEMA_DIR = Path(__file__).parents[1] / "schemas"
 SCHEMAS = {
@@ -15,6 +20,9 @@ SCHEMAS = {
     SCHEMA_DIR / "lumis-diagnosis-rule-v1alpha1.schema.json": diagnosis_rule_json_schema,
     SCHEMA_DIR / "lumis-diagnosis-report-v1alpha1.schema.json": diagnosis_report_json_schema,
     SCHEMA_DIR / "lumis-plugin-manifest-v1alpha1.schema.json": plugin_manifest_json_schema,
+    SCHEMA_DIR / "lumis-playbook-v1alpha1.schema.json": playbook_json_schema,
+    SCHEMA_DIR / "lumis-policy-v1alpha1.schema.json": policy_json_schema,
+    SCHEMA_DIR / "lumis-action-proposal-v1alpha1.schema.json": proposal_json_schema,
 }
 
 

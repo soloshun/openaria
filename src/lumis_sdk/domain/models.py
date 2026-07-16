@@ -5,7 +5,7 @@ from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class DomainModel(BaseModel):
@@ -110,3 +110,18 @@ class ConfirmedResolution(DomainModel):
     confirmed_at: datetime
     reusable_notes: list[str] = Field(default_factory=list)
     truth_state: TruthState = TruthState.HUMAN_CONFIRMED
+    verification_id: str | None = None
+
+    @model_validator(mode="after")
+    def require_explicit_confirmation_source(self) -> "ConfirmedResolution":
+        if self.truth_state not in {
+            TruthState.HUMAN_CONFIRMED,
+            TruthState.VERIFICATION_CONFIRMED,
+        }:
+            raise ValueError("a confirmed resolution requires a confirmed truth state")
+        if self.truth_state is TruthState.VERIFICATION_CONFIRMED:
+            if not self.verified:
+                raise ValueError("verification-confirmed resolution must set verified=true")
+            if not self.verification_id:
+                raise ValueError("verification-confirmed resolution requires verification_id")
+        return self
