@@ -4,10 +4,13 @@ This independently installable package implements the public asynchronous `Memor
 contract with PostgreSQL. It is optional: installing `lumis-sdk` does not install a PostgreSQL
 driver.
 
-Install the independently versioned plugin alongside a compatible Lumis SDK release:
+Version `0.1.0` is prepared as an independent distribution. Until its PyPI trusted publisher is
+registered in [issue #41](https://github.com/soloshun/lumis-sdk/issues/41), install it from a
+repository checkout alongside the released core:
 
 ```bash
-pip install "lumis-sdk==0.0.7" "lumis-sdk-postgres-memory==0.1.0"
+pip install "lumis-sdk==0.0.7"
+pip install ./packages/lumis-sdk-postgres-memory
 ```
 
 Project YAML references an environment variable rather than containing credentials:
