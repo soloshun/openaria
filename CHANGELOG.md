@@ -2,6 +2,35 @@
 
 All notable changes to Lumis SDK are recorded here. The project follows the spirit of [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and uses [Semantic Versioning](https://semver.org/) once release versions are established.
 
+## Unreleased
+
+## [0.0.8] - 2026-07-16
+
+### Added
+
+- Added strict versioned playbook, deterministic policy, evidence-linked proposal, and
+  approval-decision contracts with bounded typed parameters, expiry, immutable revision
+  references, canonical JSON, and SHA-256 digests.
+- Added a proposal-only application service and idempotent reference approval ledger; core still
+  exposes no action executor or execution authority.
+- Added explicit verification requests, checks, records, conservative truth transitions,
+  verification-aware learning, rejection/supersession persistence, reusable-only retrieval, and
+  transparent lexical/filter/truth score components.
+- Added deterministic replay cases and exact-match metrics, checked policy/playbook/proposal
+  schemas, RFC 0003, API documentation, and offline proposal/replay cookbooks.
+
+### Fixed
+
+- Plugin discovery now reads each distribution's own uniquely packaged static manifest, allowing
+  multiple independently installed plugins to coexist without overwriting one shared
+  `lumis-plugin.json` path.
+
+### Security
+
+- High-risk proposals cannot auto-approve, unknown actions and missing policy rules fail closed,
+  proposal parameters are allowlisted and bounded, and approval does not grant execution.
+- Failed, unknown, and timed-out verification cannot report success or become reusable memory.
+
 ## [0.0.7] - 2026-07-16
 
 ### Added

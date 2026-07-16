@@ -108,7 +108,7 @@ wheels = [
 
 [[package]]
 name = "lumis-sdk"
-version = "0.0.6"
+version = "0.0.8"
 source = { editable = "../../" }
 dependencies = [
     { name = "pydantic" },
@@ -134,7 +134,7 @@ dev = [
 
 [[package]]
 name = "lumis-sdk-http-json-evidence"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },

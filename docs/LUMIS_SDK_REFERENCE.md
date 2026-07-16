@@ -20,11 +20,11 @@ It does not replace a monitoring system or orchestrator. It does not require a m
 | Detect | Local-log input and incident-source contracts; production detection remains external. |
 | Triage | Deterministic classification, severity, and missing context. |
 | Diagnose | Explainable rules; optional model gateway only after explicit policy and injection. |
-| Plan | Recommendation-only `ActionPlan` and suggested playbooks. |
-| Approve | Explicit approval state contract. |
+| Plan | Versioned, evidence-linked, bounded action proposals selected from declarative playbooks. |
+| Approve | Revision-pinned, attributable, idempotent decisions; high risk never auto-approves. |
 | Remediate | No core executor. Future work requires RFC, allowlist, policy, audit, limits, and sandbox tests. |
-| Verify | Verification result contract; no false recovery claim. |
-| Learn | SQLite and optional PostgreSQL operational memory retain explicit resolutions; verification-aware promotion and replay evaluation remain roadmap work. |
+| Verify | Explicit passed, failed, unknown, and timed-out records; non-passing outcomes escalate. |
+| Learn | Truth transitions, reusable-only retrieval, score components, and deterministic replay evaluation. |
 
 ## Architecture source
 
@@ -49,6 +49,10 @@ Read:
 with deadlines, filtering, duplicate handling, truncation, redaction, and structured failures.
 
 `lumis_sdk.application.run_guarded_lifecycle` coordinates context, diagnosis, proposal, approval, and verification without an executor or infrastructure adapter.
+
+`ProposalService` validates versioned playbooks, default-deny policies, evidence provenance, and
+bounded parameters. `learn_from_verification` promotes only explicit verified resolutions and
+rejects failed claims without converting unknown outcomes into truth.
 
 ### Ports
 
@@ -80,6 +84,8 @@ select local JSON evidence and Markdown or JSON reporting. Unknown fields and un
 proof-of-concept configuration are rejected, and checked JSON Schemas cover configuration, rules,
 and reports.
 
+Playbook, policy, and proposal documents also have checked `lumis.dev/v1alpha1` schemas.
+
 ## Truth and confidence
 
 Facts are supported observations. Evidence points to supplied context. Hypotheses remain uncertain and carry confidence. Missing evidence is visible. A human resolution changes local memory from `unconfirmed_hypothesis` to `human_confirmed`; model text never performs that transition.
@@ -94,6 +100,9 @@ Rule confidence is authored calibration, not a framework-computed probability an
 - Logs, code, runbooks, tickets, and model output are untrusted data.
 - No remote telemetry is emitted by default.
 - No core shell/cloud/database action executor exists.
+
+See [Policy, verification, and learning API](python-api/policy-verification-learning.md) and
+[RFC 0003](rfcs/0003-policy-verification-learning.md).
 
 ## Cookbooks
 

@@ -1,6 +1,7 @@
 """Tests for local SQLite incident memory and transparent keyword search."""
 
 import asyncio
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -10,6 +11,7 @@ from lumis_sdk.adapters.incidents import incident_from_log
 from lumis_sdk.adapters.reports import render_markdown_report
 from lumis_sdk.adapters.sqlite import SQLiteIncidentStore, SQLiteMemoryStore, search_incidents
 from lumis_sdk.config import DeterministicRule
+from lumis_sdk.domain import TruthState, TruthTransition
 from lumis_sdk.ports import MemoryConflictError, MemoryQuery
 from lumis_sdk.testkit import (
     assert_memory_store_contract,
@@ -104,5 +106,32 @@ def test_async_sqlite_store_rejects_conflicting_resolution(tmp_path: Path) -> No
             await store.record_resolution(
                 resolution.model_copy(update={"outcome": "A conflicting outcome."})
             )
+
+    asyncio.run(exercise())
+
+
+def test_confirmed_memory_can_be_explicitly_superseded(tmp_path: Path) -> None:
+    """A retained resolution remains inspectable after a newer incident supersedes it."""
+    store = SQLiteMemoryStore(tmp_path / "portable-memory.db")
+
+    async def exercise() -> None:
+        episode = make_test_episode()
+        await store.save_incident(episode)
+        await store.record_resolution(make_test_resolution())
+        transition = TruthTransition(
+            transition_id="supersession-1",
+            incident_id=episode.incident_id,
+            from_state=TruthState.HUMAN_CONFIRMED,
+            to_state=TruthState.SUPERSEDED,
+            actor="test-reviewer",
+            reason="A newer verified incident corrected this outcome.",
+            recorded_at=datetime(2026, 7, 16, tzinfo=UTC),
+            supersedes_incident_id="44444444-4444-4444-8444-444444444444",
+        )
+        await store.record_truth_transition(transition)
+        matches = await store.search(MemoryQuery(text="TESTKIT_SIGNATURE"))
+        assert matches[0].episode.truth_state is TruthState.SUPERSEDED
+        assert matches[0].episode.resolution is not None
+        assert await store.search(MemoryQuery(text="TESTKIT_SIGNATURE", reusable_only=True)) == []
 
     asyncio.run(exercise())

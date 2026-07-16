@@ -1,5 +1,6 @@
 """Reusable assertions for third-party adapter contract tests."""
 
+from datetime import UTC, datetime
 from uuid import UUID
 
 from lumis_sdk.adapters.reports import parse_json_report, render_json_report
@@ -7,6 +8,8 @@ from lumis_sdk.domain import (
     DiagnosisReportDocument,
     EvidenceCollection,
     EvidenceRequest,
+    TruthState,
+    TruthTransition,
 )
 from lumis_sdk.ports import (
     MemoryConflictError,
@@ -94,6 +97,26 @@ async def assert_memory_store_contract(store: MemoryStore) -> None:
         raise AssertionError("memory store did not preserve the explicit truth state")
     if not match.reasons or match.score <= 0:
         raise AssertionError("memory search must expose positive transparent ranking reasons")
+    if set(match.score_components) != {"lexical", "filters", "truth"}:
+        raise AssertionError("memory search must expose stable score components")
+
+    rejected_id = "33333333-3333-4333-8333-333333333333"
+    await store.save_incident(make_test_episode(incident_id=rejected_id))
+    rejection = TruthTransition(
+        transition_id="testkit-rejection",
+        incident_id=rejected_id,
+        from_state=TruthState.UNCONFIRMED_HYPOTHESIS,
+        to_state=TruthState.REJECTED,
+        actor="testkit-verifier",
+        reason="Synthetic verification failed.",
+        recorded_at=datetime(2026, 1, 2, tzinfo=UTC),
+        verification_id="verification-testkit",
+    )
+    await store.record_truth_transition(rejection)
+    await store.record_truth_transition(rejection)
+    reusable = await store.search(MemoryQuery(text="TESTKIT_SIGNATURE", reusable_only=True))
+    if any(match.episode.incident_id == rejected_id for match in reusable):
+        raise AssertionError("rejected memory was returned as reusable")
 
     missing = resolution.model_copy(
         update={"incident_id": UUID("22222222-2222-4222-8222-222222222222")}

@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from lumis_sdk.adapters.memory import is_idempotent_episode_replay, rank_memory_episodes
-from lumis_sdk.domain import ConfirmedResolution
+from lumis_sdk.domain import ConfirmedResolution, TruthState, TruthTransition
 from lumis_sdk.ports import (
     IncidentEpisode,
     MemoryConflictError,
@@ -34,6 +34,10 @@ class SQLiteMemoryStore:
     async def record_resolution(self, resolution: ConfirmedResolution) -> None:
         """Attach one explicit resolution idempotently to an existing episode."""
         await asyncio.to_thread(self._record_resolution, resolution)
+
+    async def record_truth_transition(self, transition: TruthTransition) -> None:
+        """Persist one rejection or supersession idempotently."""
+        await asyncio.to_thread(self._record_truth_transition, transition)
 
     async def search(self, query: MemoryQuery) -> list[MemoryMatch]:
         """Search a bounded candidate set and expose deterministic ranking reasons."""
@@ -82,6 +86,13 @@ class SQLiteMemoryStore:
                 update={
                     "resolution": resolution,
                     "truth_state": resolution.truth_state,
+                    "truth_transitions": [
+                        *existing.truth_transitions,
+                        TruthTransition.for_resolution(
+                            f"resolution:{resolution.confirmed_at.isoformat()}",
+                            resolution=resolution,
+                        ),
+                    ],
                 }
             )
             connection.execute(
@@ -94,6 +105,62 @@ class SQLiteMemoryStore:
                     updated.model_dump_json(),
                     datetime.now(UTC).isoformat(),
                     incident_id,
+                ),
+            )
+
+    def _record_truth_transition(self, transition: TruthTransition) -> None:
+        self._initialize()
+        if transition.to_state in {
+            TruthState.HUMAN_CONFIRMED,
+            TruthState.VERIFICATION_CONFIRMED,
+        }:
+            raise ValueError("confirmed truth must be recorded with an explicit resolution")
+        with self._connect() as connection:
+            existing = self._get_episode(connection, transition.incident_id, required=False)
+            if existing is None:
+                raise MemoryIncidentNotFoundError(
+                    f"No memory episode found for incident_id {transition.incident_id!r}"
+                )
+            previous = next(
+                (
+                    item
+                    for item in existing.truth_transitions
+                    if item.transition_id == transition.transition_id
+                ),
+                None,
+            )
+            if previous is not None:
+                if previous == transition:
+                    return
+                raise MemoryConflictError(
+                    f"transition_id {transition.transition_id!r} stores different content"
+                )
+            if existing.truth_state != transition.from_state:
+                raise MemoryConflictError(
+                    f"truth transition expected {transition.from_state.value!r}, "
+                    f"found {existing.truth_state.value!r}"
+                )
+            updated = existing.model_copy(
+                update={
+                    "truth_state": transition.to_state,
+                    "truth_transitions": [*existing.truth_transitions, transition],
+                    "superseded_by_incident_id": (
+                        transition.supersedes_incident_id
+                        if transition.to_state is TruthState.SUPERSEDED
+                        else existing.superseded_by_incident_id
+                    ),
+                }
+            )
+            connection.execute(
+                """
+                UPDATE lumis_memory_episodes
+                SET episode_json = ?, updated_at = ?
+                WHERE incident_id = ?
+                """,
+                (
+                    updated.model_dump_json(),
+                    datetime.now(UTC).isoformat(),
+                    transition.incident_id,
                 ),
             )
 
