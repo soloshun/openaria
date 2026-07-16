@@ -35,10 +35,13 @@ durable roadmap epics, while only the active sprint is split into granular imple
 | Sprint 1 - Evidence and reporting | Complete | Bounded typed evidence, versioned JSON reports, doctor checks, stable testkit contracts, and releases `0.0.3`/`0.0.4`. | #4, #19 |
 | Sprint 2 - Plugin SDK | Complete | Governed discovery, manifests, compatibility checks, explicit authority policy, plugin contract tests, and an independent package proof. | #5 |
 | Sprint 3 - Durable memory and connector proof | Complete | Optional shared memory, webhook normalization, an independently packaged evidence path, and the `0.0.7` release. | #2, #6 |
-| Sprint 4 - Policy and playbook proposals | 2026-11-16 to 2027-01-15 | Typed, evidence-linked, approval-aware proposals with no core execution authority. | #7 |
-| Sprint 5 - Verification and learning | 2027-01-18 to 2027-03-19 | Explicit verification truth, transparent retrieval, and replay evaluation. | #8 |
+| Sprint 4 - Policy and playbook proposals | Complete in package `0.0.8` | Typed, evidence-linked, approval-aware proposals with no core execution authority. | #7, #47, #48 |
+| Sprint 5 - Verification and learning | Complete in package `0.0.8` | Explicit verification truth, transparent retrieval, and replay evaluation. | #8, #49, #50 |
 | Sprint 6 - v1 stabilization | 2027-03-22 to 2027-06-30 | Stable contracts, secure releases, complete docs, and independent adoption evidence. | #9 |
 
 Feature and fix branches start from `dev` and return to `dev` through review. Reviewed release
 changes are promoted from `dev` to `main`; package publication remains an explicit maintainer
 release action.
+
+Roadmap milestones (`v0.4`, `v0.5`) name capability groups. They do not dictate Python package
+version numbers; Sprints 4 and 5 are intentionally combined in the `0.0.8` release.

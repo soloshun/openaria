@@ -17,7 +17,8 @@ The core owns stable, typed interfaces and safe default behavior:
 - Store local incident memory and retrieve it using a transparent baseline search.
 - Provide a deterministic diagnosis path that works without a model provider.
 - Define a provider-neutral model-gateway boundary, redaction, and structured-output validation.
-- Define lifecycle contracts for context retrieval, policy decisions, approval, planning, verification, and audit events.
+- Define versioned proposal governance, explicit verification, truth-aware retrieval, replay
+  evaluation, and lifecycle compatibility contracts.
 
 The core does **not** own a live agent, a cloud account, a perpetual monitor, production credentials, direct remediation access, synthetic business scenarios, or project-specific rules/playbooks.
 
@@ -47,9 +48,9 @@ The cookbook simulates the paper's seven logical layers. The agentic reasoning s
 | 2. Telemetry and signals | Cookbook-owned logs, metrics, schema snapshot, and lineage snapshot | Context-provider contract |
 | 3. Incident memory and knowledge | Local SQLite incident memory and cookbook runbook/playbook | Memory-store contract |
 | 4. Deterministic policy and agentic reasoning | Cookbook YAML rules first; optional Agno diagnosis agent for ambiguous context | Diagnosis, model-gateway, and policy contracts |
-| 5. Approval and governance | Cookbook-owned explicit human approval prompt or fixture decision | Approval and audit contracts |
-| 6. Guarded execution | No production execution; a cookbook proposal only | Action-plan contract that cannot execute commands |
-| 7. Verification and learning | Cookbook-owned synthetic verification result and memory update | Verifier and memory-store contracts |
+| 5. Approval and governance | Cookbook-owned explicit human approval prompt or fixture decision | Versioned proposal, approval-decision, and canonical hash contracts |
+| 6. Guarded execution | No production execution; a cookbook proposal only | Proposal contract with `execution_allowed=false` |
+| 7. Verification and learning | Cookbook-owned synthetic verification result and memory update | Explicit verification, truth transitions, reusable retrieval, and replay metrics |
 
 ## Agent tools
 

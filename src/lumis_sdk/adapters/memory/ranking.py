@@ -22,6 +22,8 @@ def is_idempotent_episode_replay(
         update={
             "resolution": None,
             "truth_state": TruthState.UNCONFIRMED_HYPOTHESIS,
+            "truth_transitions": [],
+            "superseded_by_incident_id": None,
         }
     )
     return unresolved_existing == incoming
@@ -36,6 +38,14 @@ def rank_memory_episodes(
     matches: list[MemoryMatch] = []
 
     for episode in episodes:
+        reusable_states = {
+            TruthState.HUMAN_CONFIRMED,
+            TruthState.VERIFICATION_CONFIRMED,
+        }
+        if query.reusable_only and episode.truth_state not in reusable_states:
+            continue
+        if query.truth_states and episode.truth_state not in query.truth_states:
+            continue
         if (
             query.classification is not None
             and episode.diagnosis.triage.classification != query.classification
@@ -52,19 +62,44 @@ def rank_memory_episodes(
         if query_terms and not matched_terms:
             continue
 
-        score = float(len(matched_terms))
+        lexical_score = float(len(matched_terms))
+        filter_score = 0.0
+        truth_score = {
+            TruthState.VERIFICATION_CONFIRMED: 2.0,
+            TruthState.HUMAN_CONFIRMED: 1.5,
+            TruthState.UNCONFIRMED_HYPOTHESIS: 0.0,
+            TruthState.REJECTED: 0.0,
+            TruthState.SUPERSEDED: 0.0,
+        }[episode.truth_state]
+        score = lexical_score + truth_score
         reasons: list[str] = []
         if matched_terms:
             reasons.append(f"matched terms: {', '.join(matched_terms)}")
         if query.classification is not None:
             score += 1
+            filter_score += 1
             reasons.append(f"classification matched: {query.classification}")
         if query.pipeline_name is not None:
             score += 1
+            filter_score += 1
             reasons.append(f"pipeline matched: {query.pipeline_name}")
+        reasons.append(f"truth state: {episode.truth_state.value}")
+        if truth_score:
+            reasons.append(f"confirmed truth weight: {truth_score:g}")
         if not reasons:
             reasons.append("matched an unfiltered bounded memory query")
-        matches.append(MemoryMatch(episode=episode, score=score, reasons=reasons))
+        matches.append(
+            MemoryMatch(
+                episode=episode,
+                score=score,
+                reasons=reasons,
+                score_components={
+                    "lexical": lexical_score,
+                    "filters": filter_score,
+                    "truth": truth_score,
+                },
+            )
+        )
 
     return sorted(
         matches,
