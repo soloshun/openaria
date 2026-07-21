@@ -294,7 +294,7 @@
     },
     "ProjectSpec": {
       "additionalProperties": false,
-      "description": "The v1alpha1 project specification.",
+      "description": "The stable v1 project specification.",
       "properties": {
         "environment": {
           "default": "local",
@@ -385,7 +385,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "Versioned Lumis SDK project configuration document.",
+  "description": "Versioned Lumis SDK project configuration document.\n\nThe loader accepts the deprecated v1alpha1 marker during the documented\ncompatibility window. New documents and generated schemas use v1.",
   "properties": {
     "apiVersion": {
       "const": "lumis.dev/v1alpha1",

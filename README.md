@@ -9,6 +9,7 @@
   <a href="LICENSE">Apache-2.0</a> ·
   <a href="docs/architecture/overview.md">Architecture</a> ·
   <a href="docs/configuration.md">Configuration</a> ·
+  <a href="docs/README.md">Documentation index</a> ·
   <a href="cookbook/README.md">Cookbooks</a> ·
   <a href="ROADMAP.md">Roadmap</a>
 </p>
@@ -107,7 +108,7 @@ discovery, explicit loading policy, compatibility, and contract testing.
 | Incident input | Local log normalization and typed vendor-neutral incident contracts. |
 | Evidence collection | Async provider port, bounded collection service, safe failures, redaction, and a local JSON reference adapter. |
 | Deterministic diagnosis | Legacy ordered text rules plus structured `all`/`any`/`not` rules with typed comparisons, required evidence, ranking, and candidate explanations. |
-| Versioned configuration | Strict `lumis.dev/v1alpha1` project and rule-set documents; unknown fields fail validation. |
+| Versioned configuration | Strict `lumis.dev/v1` project and rule-set documents; unknown fields fail validation. |
 | Reports | Deterministic Markdown or versioned JSON with facts, evidence, hypotheses, truth state, confidence, review requirement, and safety boundary. |
 | Local memory | SQLite records, human resolutions, visible truth state, and transparent lexical search. |
 | Model boundary | Explicit policy, budgets, schema-validated output, fake CI gateway, and deterministic fallback. |
@@ -150,6 +151,10 @@ pip install "lumis-sdk==0.0.8"
 
 The repository's GitHub Actions workflow publishes reviewed releases through PyPI Trusted Publishing.
 
+See the [phased roadmap](ROADMAP.md) for the stable Python foundation, bounded model/agent
+contracts, intelligence and integration packages, guarded recovery protocols, TypeScript
+feasibility, documentation, and community plans.
+
 Run the local deterministic example:
 
 ```bash
@@ -179,7 +184,7 @@ uv run lumis memory search "KeyError Close" \
 ## Versioned project configuration
 
 ```yaml
-apiVersion: lumis.dev/v1alpha1
+apiVersion: lumis.dev/v1
 kind: Project
 metadata:
   name: customer-pipeline
@@ -206,9 +211,11 @@ spec:
     enabled: false
 ```
 
-Configuration is strict: misspelled or unknown fields fail with a validation error. Relative paths resolve from the project document. Files larger than the configured safety limit are rejected. Checked schemas for the [project](schemas/lumis-project-v1alpha1.schema.json), [rule set](schemas/lumis-rules-v1alpha1.schema.json), [structured diagnosis rule](schemas/lumis-diagnosis-rule-v1alpha1.schema.json), and [JSON diagnosis report](schemas/lumis-diagnosis-report-v1alpha1.schema.json) support editors and tooling.
+Configuration is strict: misspelled or unknown fields fail with a validation error. Relative paths resolve from the project document. Files larger than the configured safety limit are rejected. Checked stable schemas for the [project](schemas/lumis-project-v1.schema.json), [rule set](schemas/lumis-rules-v1.schema.json), [structured diagnosis rule](schemas/lumis-diagnosis-rule-v1.schema.json), and [JSON diagnosis report](schemas/lumis-diagnosis-report-v1.schema.json) support editors and tooling.
 
-Lumis SDK intentionally accepts only the versioned project and rule-set structures during this pre-release revamp. Read the [configuration reference](docs/configuration.md) for every field and its meaning.
+Released `v1alpha1` documents remain readable during the documented transition. Use
+`lumis config migrate` and the [v1 migration guide](docs/migrations/config-v1.md) to validate and
+upgrade them. Read the [configuration reference](docs/configuration.md), [public API inventory](docs/stability/public-api.md), and [compatibility policy](docs/stability/compatibility.md).
 
 ## CLI
 
@@ -223,6 +230,7 @@ lumis rules validate
 lumis rules test
 lumis plugins list
 lumis plugins doctor
+lumis config migrate
 ```
 
 `doctor` and validation commands do not make network calls or write incident state. Model assistance remains disabled unless application code supplies both an enabled policy and a gateway adapter.

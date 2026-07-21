@@ -2,16 +2,29 @@
 
 from .loader import (
     MAX_CONFIG_BYTES,
+    MAX_CONFIG_DEPTH,
+    LumisV1Alpha1DeprecationWarning,
     diagnosis_rule_json_schema,
+    legacy_diagnosis_rule_json_schema,
+    legacy_project_json_schema,
+    legacy_rules_json_schema,
     load_config,
     load_diagnosis_rule,
+    load_document_mapping,
     load_rules_file,
     project_json_schema,
     resolve_project_path,
     rules_json_schema,
 )
+from .migration import (
+    ConfigMigrationResult,
+    migrate_config_document,
+    migrate_config_file,
+    render_migrated_yaml,
+)
 from .models import (
     DIAGNOSIS_RULE_KIND,
+    LEGACY_PROJECT_API_VERSION,
     PROJECT_API_VERSION,
     CompoundRuleMatch,
     DeterministicRule,
@@ -38,7 +51,9 @@ from .models import (
 
 __all__ = [
     "MAX_CONFIG_BYTES",
+    "MAX_CONFIG_DEPTH",
     "DIAGNOSIS_RULE_KIND",
+    "LEGACY_PROJECT_API_VERSION",
     "PROJECT_API_VERSION",
     "CompoundRuleMatch",
     "DiagnosisRuleDocument",
@@ -62,10 +77,19 @@ __all__ = [
     "ReportsConfig",
     "RulesConfig",
     "diagnosis_rule_json_schema",
+    "legacy_diagnosis_rule_json_schema",
+    "legacy_project_json_schema",
+    "legacy_rules_json_schema",
+    "load_document_mapping",
     "load_config",
     "load_diagnosis_rule",
     "load_rules_file",
     "project_json_schema",
     "resolve_project_path",
     "rules_json_schema",
+    "ConfigMigrationResult",
+    "LumisV1Alpha1DeprecationWarning",
+    "migrate_config_document",
+    "migrate_config_file",
+    "render_migrated_yaml",
 ]

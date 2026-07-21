@@ -183,7 +183,7 @@
       "type": "array"
     },
     "apiVersion": {
-      "default": "lumis.dev/v1alpha1",
+      "const": "lumis.dev/v1alpha1",
       "title": "Apiversion",
       "type": "string"
     },

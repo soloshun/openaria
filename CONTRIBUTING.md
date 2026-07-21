@@ -9,6 +9,27 @@ Thanks for contributing. Lumis SDK is a pre-alpha, safety-focused open-source fr
 - Never submit credentials, private logs, customer information, employer/client code, runbooks, or architecture material.
 - Keep the current release focused on diagnosis, recommendations, and guarded-recovery contracts; production remediation is out of scope.
 
+## Contributor provenance
+
+By submitting a contribution, you certify the Developer Certificate of Origin 1.1 statement that
+you have the right to submit the work under this project's Apache-2.0 license. Add a `Signed-off-by`
+trailer to every commit using `git commit -s`. The sign-off is a provenance declaration, not a
+copyright assignment.
+
+AI-assisted contributions are welcome. Contributors may use coding assistants, language models,
+or other AI tools for code, tests, documentation, examples, and review. The human contributor
+remains fully responsible for the submitted result: they must understand it, verify it, follow the
+architecture and safety boundaries, run the required checks, remove secrets/private data, and
+have the legal right to contribute every part under Apache-2.0. AI output is not evidence that a
+change is correct, secure, original, or compatible.
+
+Briefly disclose material AI assistance in the pull-request description so reviewers understand
+the provenance and review context. Do not submit generated, copied, employer-owned, or
+model-assisted material that you cannot explain and defend. Maintainers may ask for the origin of
+substantial code, fixtures, documentation, or data and may close a contribution when provenance
+or human understanding cannot be established. Existing commits are not retroactively invalidated
+by this policy; enforcement begins when this policy is merged.
+
 ## Architecture boundaries
 
 - Put vendor-neutral models and invariants in `lumis_sdk.domain`.
@@ -52,3 +73,19 @@ uv build
 Changes that add action execution, widen filesystem/network authority, alter approval semantics, or weaken evidence boundaries require a design discussion and explicit threat-model updates before implementation.
 
 We welcome contributions to code, examples, cookbook recipes, and documentation. Changes to homepage messaging, branding, roadmap, sponsorship links, or product positioning are controlled by maintainers and may require prior discussion.
+
+## Roadmap contribution intake
+
+The [phased roadmap](ROADMAP.md) keeps future phases documentation-only until maintainers approve
+one sprint. Before proposing a roadmap capability:
+
+1. show a standalone or second-product use case rather than a Lumis-only requirement;
+2. classify the work as core, official optional package, community package, example, or
+   product-only;
+3. identify authority, privacy, compatibility, dependency, maintenance, and migration impact;
+4. provide synthetic/public fixtures and an offline verification plan; and
+5. explain which existing port or contract is reused before proposing a new one.
+
+Contributions may include written tutorials and reproducible video scripts. Every video must have
+a versioned written equivalent so users can learn and verify the example without relying on an
+external platform.

@@ -7,8 +7,12 @@ from pydantic import ValidationError
 
 from lumis_sdk.config import (
     MAX_CONFIG_BYTES,
+    MAX_CONFIG_DEPTH,
+    LumisV1Alpha1DeprecationWarning,
     diagnosis_rule_json_schema,
+    legacy_project_json_schema,
     load_config,
+    migrate_config_document,
     project_json_schema,
     rules_json_schema,
 )
@@ -49,7 +53,8 @@ spec:
         encoding="utf-8",
     )
 
-    config = load_config(config_path)
+    with pytest.warns(LumisV1Alpha1DeprecationWarning):
+        config = load_config(config_path)
 
     assert config.source_api_version == "lumis.dev/v1alpha1"
     assert config.rules[0].stable_id == "fixture-rule"
@@ -80,7 +85,8 @@ def test_project_schema_rejects_additional_properties() -> None:
     schema = project_json_schema()
 
     assert schema["additionalProperties"] is False
-    assert schema["properties"]["apiVersion"]["const"] == "lumis.dev/v1alpha1"
+    assert schema["properties"]["apiVersion"]["const"] == "lumis.dev/v1"
+    assert legacy_project_json_schema()["properties"]["apiVersion"]["const"] == "lumis.dev/v1alpha1"
 
     rules_schema = rules_json_schema()
     assert rules_schema["additionalProperties"] is False
@@ -183,6 +189,38 @@ def test_oversized_configuration_is_rejected(tmp_path: Path) -> None:
         load_config(config_path)
 
 
+def test_yaml_aliases_are_rejected_before_construction(tmp_path: Path) -> None:
+    """Configuration cannot use aliases to amplify or obscure reviewed values."""
+    config_path = tmp_path / "lumis.yml"
+    config_path.write_text(
+        """apiVersion: lumis.dev/v1
+kind: Project
+metadata:
+  name: alias-project
+spec:
+  memory: &shared
+    provider: sqlite
+  reports: *shared
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="aliases are not supported"):
+        load_config(config_path)
+
+
+def test_excessive_yaml_depth_is_rejected(tmp_path: Path) -> None:
+    """Deeply nested YAML fails at a deterministic parser boundary."""
+    nested = "value: leaf\n"
+    for _ in range(MAX_CONFIG_DEPTH + 1):
+        nested = "level:\n" + "".join(f"  {line}\n" for line in nested.splitlines())
+    config_path = tmp_path / "deep.yml"
+    config_path.write_text(nested, encoding="utf-8")
+
+    with pytest.raises(ValueError, match="maximum depth"):
+        load_config(config_path)
+
+
 def test_project_can_load_single_structured_rule_documents(tmp_path: Path) -> None:
     """Project rule paths may select the v0.2 single-document contract."""
     (tmp_path / "rule.yml").write_text(
@@ -281,3 +319,149 @@ spec:
 
     with pytest.raises(ValueError, match="cannot mix"):
         load_config(config_path)
+
+
+def test_stable_v1_project_and_rule_documents_load_without_deprecation(tmp_path: Path) -> None:
+    """Stable documents form the default contract and load as one versioned collection."""
+    (tmp_path / "rules.yml").write_text(
+        """apiVersion: lumis.dev/v1
+kind: DiagnosisRuleSet
+metadata:
+  name: stable-rules
+spec:
+  rules: []
+""",
+        encoding="utf-8",
+    )
+    config_path = tmp_path / "lumis.yml"
+    config_path.write_text(
+        """apiVersion: lumis.dev/v1
+kind: Project
+metadata:
+  name: stable-project
+spec:
+  rules:
+    files: [rules.yml]
+""",
+        encoding="utf-8",
+    )
+
+    config = load_config(config_path)
+
+    assert config.source_api_version == "lumis.dev/v1"
+
+
+def test_project_rejects_mixed_api_versions(tmp_path: Path) -> None:
+    """A project cannot silently combine stable and deprecated rule contracts."""
+    (tmp_path / "rules.yml").write_text(
+        """apiVersion: lumis.dev/v1alpha1
+kind: DiagnosisRuleSet
+metadata:
+  name: old-rules
+spec:
+  rules: []
+""",
+        encoding="utf-8",
+    )
+    config_path = tmp_path / "lumis.yml"
+    config_path.write_text(
+        """apiVersion: lumis.dev/v1
+kind: Project
+metadata:
+  name: stable-project
+spec:
+  rules:
+    files: [rules.yml]
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="same apiVersion"):
+        load_config(config_path)
+
+
+def test_v1alpha1_migration_is_validated_idempotent_and_shape_preserving() -> None:
+    """Migration changes only the marker and can safely be repeated."""
+    raw = {
+        "apiVersion": "lumis.dev/v1alpha1",
+        "kind": "Project",
+        "metadata": {"name": "migration-fixture"},
+        "spec": {"environment": "staging"},
+    }
+
+    first = migrate_config_document(raw)
+    second = migrate_config_document(first.document)
+
+    assert first.changed is True
+    assert first.document == {
+        "apiVersion": "lumis.dev/v1",
+        "kind": "Project",
+        "metadata": {"name": "migration-fixture"},
+        "spec": {"environment": "staging"},
+    }
+    assert second.changed is False
+    assert second.document == first.document
+
+
+@pytest.mark.parametrize(
+    ("kind", "payload"),
+    [
+        (
+            "DiagnosisRuleSet",
+            {"metadata": {"name": "rules"}, "spec": {"rules": []}},
+        ),
+        (
+            "DiagnosisRule",
+            {
+                "metadata": {"name": "timeout"},
+                "spec": {
+                    "match": {"all": [{"field": "log.text", "contains": "timeout"}]},
+                    "diagnosis": {
+                        "classification": "timeout",
+                        "summary": "A timeout occurred.",
+                        "hypothesis": "A dependency may be unavailable.",
+                        "confidence": 0.5,
+                    },
+                },
+            },
+        ),
+        (
+            "PluginManifest",
+            {
+                "metadata": {"name": "fixture-plugin", "version": "1.0.0"},
+                "spec": {
+                    "entryPoint": "fixture:create_plugin",
+                    "capabilities": ["evidence_provider"],
+                    "supportStatus": "community",
+                    "sdk": {"minimum": "0.0.8", "maximumExclusive": "2.0.0"},
+                    "summary": "A fixture plugin.",
+                },
+            },
+        ),
+        (
+            "Playbook",
+            {
+                "metadata": {"name": "restart", "version": "1"},
+                "actions": [
+                    {"name": "restart_task", "summary": "Restart one task.", "risk": "medium"}
+                ],
+            },
+        ),
+        (
+            "RecoveryPolicy",
+            {
+                "metadata": {"name": "safe-defaults", "version": "1"},
+                "default_deny": True,
+                "rules": [],
+            },
+        ),
+    ],
+)
+def test_every_released_versioned_configuration_shape_migrates(
+    kind: str, payload: dict[str, object]
+) -> None:
+    """Each released alpha configuration envelope has a stable v1 migration."""
+    result = migrate_config_document({"apiVersion": "lumis.dev/v1alpha1", "kind": kind, **payload})
+
+    assert result.kind == kind
+    assert result.document["apiVersion"] == "lumis.dev/v1"
